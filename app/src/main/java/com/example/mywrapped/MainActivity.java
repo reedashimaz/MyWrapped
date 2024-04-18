@@ -22,8 +22,10 @@ import java.io.IOException;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -31,7 +33,7 @@ import androidx.appcompat.app.AppCompatActivity;
 public class MainActivity extends AppCompatActivity {
 
     public static final String CLIENT_ID = "be94bf52fd094d7781e0f1ff7f9030f2";
-    public static final String REDIRECT_URI = "com.example.spotify-sdk://auth";
+    public static final String REDIRECT_URI = "com.example.mywrapped://auth";
 
     public static final int AUTH_TOKEN_REQUEST_CODE = 0;
     public static final int AUTH_CODE_REQUEST_CODE = 1;
@@ -58,6 +60,18 @@ public class MainActivity extends AppCompatActivity {
         } else {
             getTopTracks();
         }
+
+        Button playBtn1 = findViewById(R.id.playTrack1);
+        Button playBtn2 = findViewById(R.id.playTrack2);
+        Button playBtn3 = findViewById(R.id.playTrack3);
+        Button playBtn4 = findViewById(R.id.playTrack4);
+        Button playBtn5 = findViewById(R.id.playTrack5);
+
+        playBtn1.setOnClickListener(v -> playTrack(trackURIs[0]));
+        playBtn2.setOnClickListener(v -> playTrack(trackURIs[1]));
+        playBtn3.setOnClickListener(v -> playTrack(trackURIs[2]));
+        playBtn4.setOnClickListener(v -> playTrack(trackURIs[3]));
+        playBtn5.setOnClickListener(v -> playTrack(trackURIs[4]));
     }
 
     public void getToken() {
@@ -67,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
     private AuthorizationRequest getAuthenticationRequest(AuthorizationResponse.Type type) {
         return new AuthorizationRequest.Builder(CLIENT_ID, type, REDIRECT_URI)
-                .setScopes(new String[]{"user-top-read"}) // Ensures the scope includes access to top tracks
+                .setScopes(new String[]{"user-top-read", "user-modify-playback-state"}) // Ensures the scope includes access to top tracks
                 .build();
     }
 
@@ -85,6 +99,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+    private String[] trackURIs = new String[5];
 
     public void getTopTracks() {
         if (mAccessToken == null) {
@@ -128,5 +144,9 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    public void playTrack(String trackURI) {
+
     }
 }
