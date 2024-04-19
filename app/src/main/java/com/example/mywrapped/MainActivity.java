@@ -60,18 +60,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             getTopTracks();
         }
-
-        Button playBtn1 = findViewById(R.id.playTrack1);
-        Button playBtn2 = findViewById(R.id.playTrack2);
-        Button playBtn3 = findViewById(R.id.playTrack3);
-        Button playBtn4 = findViewById(R.id.playTrack4);
-        Button playBtn5 = findViewById(R.id.playTrack5);
-
-        playBtn1.setOnClickListener(v -> playTrack(trackURIs[0]));
-        playBtn2.setOnClickListener(v -> playTrack(trackURIs[1]));
-        playBtn3.setOnClickListener(v -> playTrack(trackURIs[2]));
-        playBtn4.setOnClickListener(v -> playTrack(trackURIs[3]));
-        playBtn5.setOnClickListener(v -> playTrack(trackURIs[4]));
     }
 
     public void getToken() {
@@ -128,6 +116,15 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     JSONObject jsonObject = new JSONObject(response.body().string());
                     JSONArray items = jsonObject.getJSONArray("items");
+
+                    String[] trackURIs = new String[5];
+
+                    for (int i = 0; i < trackURIs.length; i++) {
+                        JSONObject trackObject = items.getJSONObject(i);
+                        String trackURI = trackObject.getString("uri");
+                        trackURIs[i] = trackURI;
+                    }
+
                     runOnUiThread(() -> {
                         try {
                             track1View.setText(items.getJSONObject(0).getString("name"));
@@ -135,6 +132,19 @@ public class MainActivity extends AppCompatActivity {
                             track3View.setText(items.getJSONObject(2).getString("name"));
                             track4View.setText(items.getJSONObject(3).getString("name"));
                             track5View.setText(items.getJSONObject(4).getString("name"));
+
+                            Button playBtn1 = findViewById(R.id.playTrack1);
+                            Button playBtn2 = findViewById(R.id.playTrack2);
+                            Button playBtn3 = findViewById(R.id.playTrack3);
+                            Button playBtn4 = findViewById(R.id.playTrack4);
+                            Button playBtn5 = findViewById(R.id.playTrack5);
+
+                            playBtn1.setOnClickListener(v -> playTrack(trackURIs[0]));
+                            playBtn2.setOnClickListener(v -> playTrack(trackURIs[1]));
+                            playBtn3.setOnClickListener(v -> playTrack(trackURIs[2]));
+                            playBtn4.setOnClickListener(v -> playTrack(trackURIs[3]));
+                            playBtn5.setOnClickListener(v -> playTrack(trackURIs[4]));
+
                         } catch (JSONException e) {
                             Log.e("Spotify", "JSON parsing error", e);
                         }
@@ -147,6 +157,55 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void playTrack(String trackURI) {
+        if (mAccessToken == null) {
+            Toast.makeText(this, "Access token missing!", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
+        if (trackURI == null) {
+            Toast.makeText(this, "Track URI missing!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        OkHttpClient client = new OkHttpClient();
+        String playUrl = "https://api.spotify.com/v1/me/player/play";
+
+        JSONObject payload = new JSONObject();
+        try {
+            JSONArray uris = new JSONArray();
+            uris.put(trackURI);
+            payload.put("uris", uris);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        RequestBody body = RequestBody.create(payload.toString(), MediaType.parse("application/json"));
+        Request request = new Request.Builder()
+                .url(playUrl)
+                .addHeader("Authorization", "Bearer " + mAccessToken)
+                .put(body)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e("Spotify", "Error playing track", e);
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to play track", Toast.LENGTH_SHORT).show());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    Log.e("Spotify", "Failed to command Spotify: " + response);
+                    // Log response body for debugging
+                    Log.e("Spotify", "Response body: " + response.body().string());
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to command Spotify", Toast.LENGTH_SHORT).show());
+                } else {
+                    Log.d("Spotify", "Successfully played track");
+                    // Log response body for debugging
+                    Log.d("Spotify", "Response body: " + response.body().string());
+                }
+            }
+        });
     }
 }
